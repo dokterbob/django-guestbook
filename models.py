@@ -9,7 +9,7 @@ class Entry(models.Model):
     ip = models.IPAddressField('IP', blank=True, null=True)
     name = models.CharField('naam', max_length=200)
     email = models.EmailField('e-mail', blank=True, null=True)
-    website = models.URLField('website', blank=True, null=True)
+    url = models.URLField('website', blank=True, null=True)
     activated = models.BooleanField('geactiveerd', default=True)
 
     text = models.TextField()

@@ -1,83 +1,104 @@
-from django.shortcuts import render_to_response, get_object_or_404
-from django.http import HttpResponse, Http404, HttpResponseRedirect
-from django.template import loader
+from django import http
+from django.conf import settings
+from utils import next_redirect, confirmation_view
+from django.core.exceptions import ObjectDoesNotExist
+from django.db import models
+from django.shortcuts import render_to_response
+from django.template import RequestContext
+from django.template.loader import render_to_string
+from django.utils.html import escape
+from django.contrib import guestbook
+from django.contrib.guestbook import signals
 
-from django.core.paginator import ObjectPaginator, InvalidPage
+class EntryPostBadRequest(http.HttpResponseBadRequest):
+    """
+    Response returned when a entry post is invalid. If ``DEBUG`` is on a
+    nice-ish error message will be displayed (for debugging purposes), but in
+    production mode a simple opaque 400 page will be displayed.
+    """
+    def __init__(self, why):
+        super(EntryPostBadRequest, self).__init__()
+        if settings.DEBUG:
+            self.content = render_to_string("guestbook/400-debug.html", {"why": why})
 
-from django import forms
+def post_entry(request, next=None):
+    """
+    Post a entry.
 
-from amfibi.guestbook.models import *
-from amfibi.site.models import *
+    HTTP POST is required. If ``POST['submit'] == "preview"`` or if there are
+    errors a preview template, ``guestbook/preview.html``, will be rendered.
+    """
 
-from accesscontrol.models import is_blocked
+    # Require POST
+    if request.method != 'POST':
+        return http.HttpResponseNotAllowed(["POST"])
 
-def last_page(request):
-    paginator = ObjectPaginator(Entry.objects.filter(activated=True), 4, orphans=2)
-    topage = paginator.pages
-    return HttpResponseRedirect('%d/' % topage)
+    # Fill out some initial data fields from an authenticated user, if present
+    data = request.POST.copy()
+    if request.user.is_authenticated():
+        if not data.get('name', ''):
+            data["name"] = request.user.get_full_name()
+        if not data.get('email', ''):
+            data["email"] = request.user.email
 
-def guestbook_list(request, page, errors=None):
-    m = Menu.objects.filter(activated=True)
-    p = Menu.objects.get(slug='gastenboek').mainpage
-    paginator = ObjectPaginator(Entry.objects.filter(activated=True), 4, orphans=2)
+    # Do we want to preview the entry?
+    preview = data.get("submit", "").lower() == "preview" or \
+              data.get("preview", None) is not None
 
-    page = int(page)-1
-    e = paginator.get_page(page)
+    # Construct the entry form
+    form = guestbook.get_form()(target, data=data)
 
-    manipulator = Entry.AddManipulator()
-    f = forms.FormWrapper(manipulator, {}, {})
+    # Check security information
+    if form.security_errors():
+        return EntryPostBadRequest(
+            "The entry form failed security verification: %s" % \
+                escape(str(form.security_errors())))
 
-    if paginator.has_next_page(page):
-        next_page = page+2
-    else:
-        next_page = None
+    # If there are errors or if we requested a preview show the entry
+    if form.errors or preview:
+        template_list = [
+            "guestbook/%s_%s_preview.html" % tuple(str(model._meta).split(".")),
+            "guestbook/%s_preview.html" % model._meta.app_label,
+            "guestbook/preview.html",
+        ]
+        return render_to_response(
+            template_list, {
+                "entry" : form.data.get("entry", ""),
+                "form" : form,
+            }, 
+            RequestContext(request, {})
+        )
 
-    if paginator.has_previous_page(page):
-        previous_page = page
-    else:
-        previous_page = None
+    # Otherwise create the entry
+    entry = form.get_entry_object()
+    entry.ip_address = request.META.get("REMOTE_ADDR", None)
+    if request.user.is_authenticated():
+        entry.user = request.user
 
-    env = { 'menu':m,
-            'page':p,
-            'current_page' : page+1,
-            'next_page': next_page,
-            'previous_page': previous_page,
-            'entries': e,
-            'form': f
-          }
+    # Signal that the entry is about to be saved
+    responses = signals.entry_will_be_posted.send(
+        sender  = entry.__class__,
+        entry = entry,
+        request = request
+    )
 
-    return render_to_response('guestbook_list.html', env)
+    for (receiver, response) in responses:
+        if response == False:
+            return EntryPostBadRequest(
+                "entry_will_be_posted receiver %r killed the entry" % receiver.__name__)
 
-def add_entry(request):
-    new_data = request.POST.copy()
-    manipulator = Entry.AddManipulator()
-    e = manipulator.get_validation_errors(new_data)
-    manipulator.do_html2python(new_data)
-    ip = request.META.get('REMOTE_ADDR')
-    #host = gethostbyaddr(ip)[0]
-    new_data.update({'ip':ip, 'activated':True})
-    
-    #manipulator.ip = request.META.get('REMOTE_ADDR')
-    #lasthour = datetime.datetime.now() - datetime.timedelta(hours=1)
-    #hourcount = Entry.objects.filter(ip__exact=ip, date_add__gte=lasthour).count()
+    # Save the entry and signal that it was saved
+    entry.save()
+    signals.entry_was_posted.send(
+        sender  = entry.__class__,
+        entry = entry,
+        request = request
+    )
 
-    o = None
-    if is_blocked(ip):
-        o = "Vanaf jouw IP-adres (%s) is het op dit moment niet toegestaan om berichten toe te voegen. Probeer het later nog eens." % ip
-    elif not e:
-        print "Entry added"
-        manipulator.save(new_data)
+    return next_redirect(data, next, entry_done, c=entry._get_pk_val())
 
-    print o, e
-
-    m = Menu.objects.filter(activated=True)
-    p = Menu.objects.get(slug='fotos').mainpage
-    
-    env = { 'menu':m,
-            'page':p,
-            'errors':e,
-            'othererror':o
-          }
-
-    return render_to_response('guestbook_add_result.html', env)
+entry_done = confirmation_view(
+    template = "guestbook/posted.html",
+    doc = """Display a "entry was posted" success page."""
+)
 
