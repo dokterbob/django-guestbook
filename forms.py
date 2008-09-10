@@ -6,13 +6,13 @@ from django import forms
 from django.forms.util import ErrorDict
 from django.conf import settings
 from django.http import Http404
-from django.contrib.contenttypes.models import ContentType
-from models import Entry
 from django.utils.encoding import force_unicode
 from django.utils.hashcompat import sha_constructor
 from django.utils.text import get_text_list
 from django.utils.translation import ngettext
 from django.utils.translation import ugettext_lazy as _
+
+from models import Entry
 
 GUESTBOOK_ENTRY_MAX_LENGTH = getattr(settings,'GUESTBOOK_ENTRY_MAX_LENGTH', 3000)
 
@@ -20,20 +20,16 @@ class EntryForm(forms.Form):
     name          = forms.CharField(label=_("Name"), max_length=50)
     email         = forms.EmailField(label=_("Email address"))
     url           = forms.URLField(label=_("URL"), required=False)
-    text       = forms.CharField(label=_('Entry'), widget=forms.Textarea,
-                                    max_length=COMMENT_MAX_LENGTH)
+    text       = forms.CharField(label=_('Comment'), widget=forms.Textarea,
+                                    max_length=GUESTBOOK_ENTRY_MAX_LENGTH)
     honeypot      = forms.CharField(required=False,
                                     label=_('If you enter anything in this field '\
                                             'your text will be treated as spam'))
     
-    #content_type  = forms.CharField(widget=forms.HiddenInput)
-    #object_pk     = forms.CharField(widget=forms.HiddenInput)
-    
     timestamp     = forms.IntegerField(widget=forms.HiddenInput)
     security_hash = forms.CharField(min_length=40, max_length=40, widget=forms.HiddenInput)
 
-    def __init__(self, target_object, data=None, initial=None):
-        self.target_object = target_object
+    def __init__(self, data=None, initial=None):
         if initial is None:
             initial = {}
         initial.update(self.generate_security_data())
@@ -52,26 +48,21 @@ class EntryForm(forms.Form):
             raise ValueError("get_entry_object may only be called on valid forms")
 
         new = Entry(
-            #content_type = ContentType.objects.get_for_model(self.target_object),
-            #object_pk    = force_unicode(self.target_object._get_pk_val()),
-            user_name    = self.cleaned_data["name"],
-            user_email   = self.cleaned_data["email"],
-            user_url     = self.cleaned_data["url"],
+            name    = self.cleaned_data["name"],
+            email   = self.cleaned_data["email"],
+            url     = self.cleaned_data["url"],
             text      = self.cleaned_data["text"],
             submit_date  = datetime.datetime.now(),
             site_id      = settings.SITE_ID,
-            is_public    = True,
             is_removed   = False,
         )
 
         # Check that this comment isn't duplicate. (Sometimes people post comments
         # twice by mistake.) If it is, fail silently by returning the old comment.
         possible_duplicates = Entry.objects.filter(
-            content_type = new.content_type,
-            object_pk = new.object_pk,
-            user_name = new.user_name,
-            user_email = new.user_email,
-            user_url = new.user_url,
+            name = new.name,
+            email = new.email,
+            url = new.url,
         )
         for old in possible_duplicates:
             if old.submit_date.date() == new.submit_date.date() and old.text == new.text:
@@ -97,8 +88,6 @@ class EntryForm(forms.Form):
     def clean_security_hash(self):
         """Check the security hash."""
         security_hash_dict = {
-            'content_type' : self.data.get("content_type", ""),
-            'object_pk' : self.data.get("object_pk", ""),
             'timestamp' : self.data.get("timestamp", ""),
         }
         expected_hash = self.generate_security_hash(**security_hash_dict)
@@ -134,8 +123,6 @@ class EntryForm(forms.Form):
         """Generate a dict of security data for "initial" data."""
         timestamp = int(time.time())
         security_dict =   {
-            'content_type'  : str(self.target_object._meta),
-            'object_pk'     : str(self.target_object._get_pk_val()),
             'timestamp'     : str(timestamp),
             'security_hash' : self.initial_security_hash(timestamp),
         }
@@ -148,13 +135,11 @@ class EntryForm(forms.Form):
         """
 
         initial_security_dict = {
-            'content_type' : str(self.target_object._meta),
-            'object_pk' : str(self.target_object._get_pk_val()),
             'timestamp' : str(timestamp),
           }
         return self.generate_security_hash(**initial_security_dict)
 
-    def generate_security_hash(self, content_type, object_pk, timestamp):
+    def generate_security_hash(self, timestamp):
         """Generate a (SHA1) security hash from the provided info."""
-        info = (content_type, object_pk, timestamp, settings.SECRET_KEY)
+        info = (timestamp, settings.SECRET_KEY)
         return sha_constructor("".join(info)).hexdigest()

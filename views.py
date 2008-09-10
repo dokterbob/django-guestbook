@@ -1,14 +1,14 @@
 from django import http
 from django.conf import settings
-from utils import next_redirect, confirmation_view
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
 from django.shortcuts import render_to_response
 from django.template import RequestContext
 from django.template.loader import render_to_string
 from django.utils.html import escape
-from django.contrib import guestbook
-from django.contrib.guestbook import signals
+from django.core.urlresolvers import reverse
+
+import guestbook
 
 class EntryPostBadRequest(http.HttpResponseBadRequest):
     """
@@ -46,7 +46,7 @@ def post_entry(request, next=None):
               data.get("preview", None) is not None
 
     # Construct the entry form
-    form = guestbook.get_form()(target, data=data)
+    form = guestbook.get_form()(data=data)
 
     # Check security information
     if form.security_errors():
@@ -56,13 +56,8 @@ def post_entry(request, next=None):
 
     # If there are errors or if we requested a preview show the entry
     if form.errors or preview:
-        template_list = [
-            "guestbook/%s_%s_preview.html" % tuple(str(model._meta).split(".")),
-            "guestbook/%s_preview.html" % model._meta.app_label,
-            "guestbook/preview.html",
-        ]
         return render_to_response(
-            template_list, {
+            "guestbook/preview.html", {
                 "entry" : form.data.get("entry", ""),
                 "form" : form,
             }, 
@@ -75,30 +70,7 @@ def post_entry(request, next=None):
     if request.user.is_authenticated():
         entry.user = request.user
 
-    # Signal that the entry is about to be saved
-    responses = signals.entry_will_be_posted.send(
-        sender  = entry.__class__,
-        entry = entry,
-        request = request
-    )
-
-    for (receiver, response) in responses:
-        if response == False:
-            return EntryPostBadRequest(
-                "entry_will_be_posted receiver %r killed the entry" % receiver.__name__)
-
     # Save the entry and signal that it was saved
     entry.save()
-    signals.entry_was_posted.send(
-        sender  = entry.__class__,
-        entry = entry,
-        request = request
-    )
 
-    return next_redirect(data, next, entry_done, c=entry._get_pk_val())
-
-entry_done = confirmation_view(
-    template = "guestbook/posted.html",
-    doc = """Display a "entry was posted" success page."""
-)
-
+    return http.HttpResponseRedirect(reverse('guestbook-page-last'))
