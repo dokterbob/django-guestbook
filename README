@@ -1,0 +1,6 @@
+Guestbook is a simple guestbook application for
+the Django web-framework. It is closely based
+on the contributed comments application.
+
+Guestbook is build to work against the latest
+checkout of Django and should be 1.0-compatible.
