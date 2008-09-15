@@ -1,0 +1,18 @@
+This is the way I recommend installation. But I guess
+it is a matter of preference and taste. This assumes
+you are using Git, which is a rather good idea any-
+way.
+
+1) Move to the root of your project
+2) mkdir dependencies
+3) git submodule add git://github.com/dokterbob/django-guestbook.git dependencies/django-guestbook
+4) git submodule init
+5) git submodule update
+6) ln -s dependencies/django-guestbook/guestbook guestbook
+7) git add guestbook
+8) Add 'guestbook' to INSTALLED_APPS in settings.py.
+9) Add '(r'^guestbook/', include('guestbook.urls')),' to your urlpatterns.
+8) git commit -a -m 'Guestbook added'
+9) ./manage.py syncdb 
+10) Be happy! Your guestbook should be up and running now!
+

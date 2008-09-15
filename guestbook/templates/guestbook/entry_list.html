@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block "title" %}Hans en Paul: 120 jaar - Gastenboek{% endblock %}
+
+{% block "htmltitle" %}Hans en Paul: 120 jaar - Gastenboek{% endblock %}
+
+{% block "content" %}
+{% for entry in entry_list %}
+    <div class="comment_{% cycle odd,even %}" id="c{{ comment.id }}">
+        <p><b>{% if entry.url %}<a href="{{ entry.url }}">{% endif %}{{ entry.name }}{% if entry.url %}</a>{% endif %}</b> reageerde, op {{ entry.submit_date|date:"j F Y" }} om {{ entry.submit_date|date:"G:i" }} uur:</p>
+        {{ entry.text|linebreaks }}
+    </div>
+{% endfor %}
+
+<form action="{% url guestbook-post %}" method="POST">
+    {% for field in form %}
+      {% if field.is_hidden %}
+        {{ field }}
+      {% else %}
+        <p
+          {% if field.errors %} class="error"{% endif %}
+          {% ifequal field.name "honeypot" %} style="display:none;"{% endifequal %}>
+          {% if field.errors %}{{ field.errors }}{% endif %}
+          {{ field.label_tag }} {{ field }}
+        </p>
+      {% endif %}
+    {% endfor %}
+    <p class="submit">
+      <input type="submit" name="submit" class="submit-post" value="Post" />
+      <input type="submit" name="submit" class="submit-preview" value="Preview" />
+    </p>
+</form>
+{% endblock %}
