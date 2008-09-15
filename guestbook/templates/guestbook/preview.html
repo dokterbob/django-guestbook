@@ -1,23 +1,22 @@
-{% extends "base.html" %}
-
-{% block "title" %}Hans en Paul: 120 jaar - Gastenboek{% endblock %}
-
-{% block "htmltitle" %}Hans en Paul: 120 jaar - Gastenboek{% endblock %}
-
-{% block "content" %}
-<h3>Controleer je reactie</h2>
+<html>
+<head>
+<title>Guestbook</title>
+</head>
+<body>
+<h1>Guestbook</h1>
+<h2>CHeck your response</h2>
 <form action="{% url guestbook-post %}" method="POST">
     {% if form.errors %}
-      <h3>Er waren fout(en) in het door jou ingevulde formulier, pas ze hieronder aan.</h3>
+      <h3>There were errors in the response, please correct them below.</h3>
     {% else %}
-    <div class="comment_even">
+    <div class="entry_even">
         {{ comment|linebreaks }}
     </div>                
       <p>
-        <input type="submit" name="submit" value="Bevestig je reactie" id="submit">
+        <input type="submit" name="submit" value="Confirm your entry" id="submit">
       </p>
     {% endif %}
-    <h3>Pas je reactie aan</h3>
+    <h3>Edit your entry</h3>
     {% for field in form %}
       {% if field.is_hidden %}
         {{ field }}
@@ -35,4 +34,6 @@
       <input type="submit" name="submit" class="submit-preview" value="Preview">
     </p>
 </form>
-{% endblock %}
+</body>
+</html>
+
