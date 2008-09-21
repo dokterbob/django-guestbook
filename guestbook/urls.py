@@ -9,7 +9,7 @@ from views import post_entry
 list_dict = { 'queryset' : Entry.objects.filter(is_removed=False),
               'paginate_by' : 5,
               'template_object_name' : 'entry',
-              'extra_context' : {'form' : EntryForm() } }
+              'extra_context' : {'form' : EntryForm(), } }
 
 last_page_dict = list_dict.copy()
 last_page_dict.update({'page':'last'})

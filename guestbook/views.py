@@ -66,7 +66,7 @@ def post_entry(request, next=None):
 
     # Otherwise create the entry
     entry = form.get_entry_object()
-    entry.ip_address = request.META.get("REMOTE_ADDR", None)
+    entry.ip = request.META.get("REMOTE_ADDR", None)
     if request.user.is_authenticated():
         entry.user = request.user
 
