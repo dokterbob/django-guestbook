@@ -1,0 +1,84 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: django-guestbook\n"
+"Report-Msgid-Bugs-To: mathijs@visualspace.nl"
+"POT-Creation-Date: 2008-09-21 19:53+0200\n"
+"PO-Revision-Date: 2008-09-21 19:53+0200\n"
+"Last-Translator: Mathijs de Bruin <mathijs@visualspace.nl>\n"
+"Language-Team: Mathijs de Bruin <mathijs@visualspace.nl>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
+
+#: forms.py:20
+msgid "Name"
+msgstr "Naam"
+
+#: forms.py:21
+msgid "Email address"
+msgstr "Email adres"
+
+#: forms.py:22
+msgid "URL"
+msgstr ""
+
+#: forms.py:23
+msgid "Comment"
+msgstr "Reactie"
+
+#: forms.py:26
+msgid "If you enter anything in this field your text will be treated as spam"
+msgstr "Als u hier iets invult wordt uw text als spam behandeld"
+
+#: forms.py:117
+#, python-format
+msgid "Watch your mouth! The word %s is not allowed here."
+msgid_plural "Watch your mouth! The words %s are not allowed here."
+msgstr[0] ""
+msgstr[1] ""
+
+#: models.py:19
+msgid "date"
+msgstr "datum"
+
+#: models.py:20
+msgid "IP address"
+msgstr "IP adres"
+
+#: models.py:21
+msgid "name"
+msgstr "naam"
+
+#: models.py:22
+msgid "e-mail"
+msgstr "e-mail"
+
+#: models.py:23
+msgid "website"
+msgstr ""
+
+#: models.py:25
+msgid "is removed"
+msgstr "is verwijdert"
+
+#: models.py:26
+msgid ""
+"Check this box if the comment is inappropriate. A \"This comment has been "
+"removed\" message will be displayed instead."
+msgstr "Klik hier als de reactie ongeschikt is. Een \"Deze reactie is verwijdert\" melding zal in plaats daarvan getoond worden."
+
+#: models.py:30
+msgid "comment"
+msgstr "reactie"
+
+#: models.py:33
+#, python-format
+msgid "%(name)s on %(date)s"
+msgstr "%(name)s op %(date)s"
