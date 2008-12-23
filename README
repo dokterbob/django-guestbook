@@ -4,3 +4,7 @@ on the contributed comments application.
 
 Guestbook is build to work against the latest
 checkout of Django and should be 1.0-compatible.
+
+More info about this app can be found in the blog
+post introducing it at:
+http://cooking.visualspace.nl/post/9992059/Django-Guestbook-application
