@@ -1,0 +1,11 @@
+*.o
+*.pyc
+.DS\_Store
+*.sqlite*
+*.sw?
+media
+portnumber
+.svn
+build
+dist
+MANIFEST
